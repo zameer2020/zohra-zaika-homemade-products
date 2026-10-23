@@ -56,7 +56,7 @@ export const OPENROUTER = {
     "https://openrouter.ai/api/v1/chat/completions",
   model:
     process.env.OPENROUTER_MODEL?.trim() ||
-    "deepseek/deepseek-chat-v3-0324:free",
+    "google/gemma-4-31b-it:free",
   maxMessages: 8,
   maxMessageChars: 1000,
   maxTotalChars: 6000,

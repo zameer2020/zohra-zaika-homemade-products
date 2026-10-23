@@ -49,7 +49,7 @@ Copy `.env.example` to `.env.local`:
 | `NEXT_PUBLIC_SITE_URL` | Public site URL, used for OpenRouter attribution headers. |
 | `NEXT_PUBLIC_DELIVERY_CHARGE_PAISE` | Optional flat delivery charge in **paise**. Leave unset until the business confirms it. |
 | `OPENROUTER_API_KEY` | **Server-only** OpenRouter key. Never prefix this with `NEXT_PUBLIC_`. |
-| `OPENROUTER_MODEL` | OpenRouter model ID, e.g. `deepseek/deepseek-chat-v3-0324:free`. |
+| `OPENROUTER_MODEL` | OpenRouter model ID, e.g. `google/gemma-4-31b-it:free`. |
 | `OPENROUTER_BASE_URL` | Optional custom OpenRouter-compatible endpoint. |
 
 If `OPENROUTER_API_KEY` is unset, the chat UI shows a friendly message and a
