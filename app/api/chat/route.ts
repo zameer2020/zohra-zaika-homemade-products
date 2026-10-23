@@ -175,7 +175,8 @@ async function callModel(
         ...messages,
       ],
       temperature: 0.2,
-      max_tokens: 450,
+      max_tokens: 300,
+      provider: { sort: "latency" },
     }),
   });
 

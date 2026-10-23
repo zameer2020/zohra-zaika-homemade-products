@@ -56,11 +56,11 @@ export const OPENROUTER = {
     "https://openrouter.ai/api/v1/chat/completions",
   model:
     process.env.OPENROUTER_MODEL?.trim() ||
-    "google/gemma-4-31b-it:free",
+    "google/gemma-4-26b-a4b-it:free",
   maxMessages: 8,
   maxMessageChars: 1000,
   maxTotalChars: 6000,
-  timeoutMs: 20_000,
+  timeoutMs: 12_000,
   rateLimit: {
     windowMs: 5 * 60 * 1000,
     maxRequests: 12,
