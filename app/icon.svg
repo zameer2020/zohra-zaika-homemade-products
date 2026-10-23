@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <circle cx="32" cy="32" r="30" fill="#173D2B"/>
+  <circle cx="32" cy="32" r="27" fill="none" stroke="#D6A84F" stroke-width="2"/>
+  <g fill="none" stroke="#D6A84F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M24 20h16v4c3 1 5 3 5 6v12a4 4 0 0 1-4 4H23a4 4 0 0 1-4-4V30c0-3 2-5 5-6v-4Z"/>
+    <path d="M22 15h20v5H22z"/>
+  </g>
+  <text x="32" y="39" text-anchor="middle" font-family="Georgia, serif" font-size="13" font-weight="bold" fill="#FFF8E9">Z</text>
+</svg>
