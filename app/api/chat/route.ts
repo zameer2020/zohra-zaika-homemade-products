@@ -2,6 +2,8 @@ import { OPENROUTER, WHATSAPP_BASE_URL } from "@/lib/business";
 import { getChatCatalogSnapshot } from "@/lib/catalog";
 
 const MODEL = OPENROUTER.model;
+const FALLBACK_MODEL =
+  process.env.OPENROUTER_FALLBACK_MODEL?.trim() || "openrouter/free";
 const ENDPOINT = OPENROUTER.endpoint;
 
 interface ChatMessage {
@@ -145,6 +147,65 @@ function buildSystemPrompt(): string {
   ].join("\n");
 }
 
+async function callModel(
+  model: string,
+  messages: ChatMessage[],
+): Promise<{ content: string | null; status: number }> {
+  const apiKey = process.env.OPENROUTER_API_KEY?.trim();
+  if (!apiKey) return { content: null, status: 0 };
+
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${apiKey}`,
+    "Content-Type": "application/json",
+  };
+  if (process.env.NEXT_PUBLIC_SITE_URL) {
+    headers["HTTP-Referer"] = process.env.NEXT_PUBLIC_SITE_URL;
+    headers["X-Title"] = "Zohra-Zaika";
+  }
+
+  const upstream = await fetch(ENDPOINT, {
+    method: "POST",
+    headers,
+    cache: "no-store",
+    signal: AbortSignal.timeout(OPENROUTER.timeoutMs),
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: "system", content: buildSystemPrompt() },
+        ...messages,
+      ],
+      temperature: 0.2,
+      max_tokens: 450,
+    }),
+  });
+
+  if (!upstream.ok) {
+    console.error(`[chat] OpenRouter responded ${upstream.status} for model ${model}`);
+    return { content: null, status: upstream.status };
+  }
+
+  let data: unknown;
+  try {
+    data = await upstream.json();
+  } catch {
+    console.error(`[chat] OpenRouter returned unreadable JSON for model ${model}`);
+    return { content: null, status: upstream.status };
+  }
+
+  const content = (
+    data as {
+      choices?: Array<{ message?: { content?: unknown } }>;
+    }
+  )?.choices?.[0]?.message?.content;
+
+  if (typeof content !== "string" || !content.trim()) {
+    console.error(`[chat] OpenRouter returned an empty response for model ${model}`);
+    return { content: null, status: upstream.status };
+  }
+
+  return { content: content.trim(), status: upstream.status };
+}
+
 export async function POST(request: Request) {
   try {
     const ip = getClientIp(request);
@@ -185,35 +246,15 @@ export async function POST(request: Request) {
       );
     }
 
-    const headers: Record<string, string> = {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    };
-    if (process.env.NEXT_PUBLIC_SITE_URL) {
-      headers["HTTP-Referer"] = process.env.NEXT_PUBLIC_SITE_URL;
-      headers["X-Title"] = "Zohra-Zaika";
+    let result = await callModel(MODEL, parsed.messages);
+    let usedModel = MODEL;
+
+    if (!result.content && FALLBACK_MODEL !== MODEL) {
+      result = await callModel(FALLBACK_MODEL, parsed.messages);
+      usedModel = FALLBACK_MODEL;
     }
 
-    const upstream = await fetch(ENDPOINT, {
-      method: "POST",
-      headers,
-      cache: "no-store",
-      signal: AbortSignal.timeout(OPENROUTER.timeoutMs),
-      body: JSON.stringify({
-        model: MODEL,
-        messages: [
-          { role: "system", content: buildSystemPrompt() },
-          ...parsed.messages,
-        ],
-        temperature: 0.2,
-        max_tokens: 450,
-      }),
-    });
-
-    if (!upstream.ok) {
-      console.error(
-        `[chat] OpenRouter responded ${upstream.status} for model ${MODEL}`,
-      );
+    if (!result.content) {
       return errorResponse(
         "The assistant is temporarily unavailable. Please try again or contact us on WhatsApp.",
         502,
@@ -221,35 +262,10 @@ export async function POST(request: Request) {
       );
     }
 
-    let data: unknown;
-    try {
-      data = await upstream.json();
-    } catch {
-      return errorResponse(
-        "The assistant returned an unreadable response. Please try WhatsApp.",
-        502,
-        "invalid_upstream_response",
-      );
-    }
-
-    const content = (
-      data as {
-        choices?: Array<{ message?: { content?: unknown } }>;
-      }
-    )?.choices?.[0]?.message?.content;
-
-    if (typeof content !== "string" || !content.trim()) {
-      return errorResponse(
-        "The assistant could not answer that. Please try again or contact us on WhatsApp.",
-        502,
-        "empty_response",
-      );
-    }
-
     return Response.json(
       {
-        reply: content.trim(),
-        model: MODEL,
+        reply: result.content,
+        model: usedModel,
         configured: true,
       },
       { headers: { "Cache-Control": "no-store" } },
